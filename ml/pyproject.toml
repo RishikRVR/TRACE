@@ -1,0 +1,26 @@
+[project]
+name = "trace-ml"
+version = "0.0.1"
+description = "TRACE world model: training, K-step forecasting and explanations"
+requires-python = ">=3.11"
+# Pin exact versions before the first training run that produces reported numbers.
+dependencies = [
+  "numpy",
+  "pandas",
+  "pyarrow",
+  "pyyaml",
+  "scikit-learn",  # logistic-regression baseline, metrics
+  "torch",         # world model; attributions are occlusion-based, so no captum yet
+]
+
+[project.optional-dependencies]
+# Offline web console (FastAPI + static single-page UI); see docs/decisions.md #9
+app = ["fastapi", "uvicorn", "python-multipart"]
+dev = ["pytest", "markdown"]   # markdown builds docs/*.html for the 2-page PDF
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["trace_ml*"]

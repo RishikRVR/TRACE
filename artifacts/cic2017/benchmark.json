@@ -1,0 +1,165 @@
+{
+ "dataset": "CIC-IDS2017 (corrected release, Engelen et al. 2022)",
+ "window_s": 30,
+ "horizon_k": 10,
+ "split": {
+  "train": 4,
+  "val": 1,
+  "test": 1,
+  "unseen": 0
+ },
+ "tasks": {
+  "all": {
+   "trace": {
+    "f1": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.08654813820865481,
+    "pr_auc": 0.021794242281073746,
+    "brier": 0.031771731277679086,
+    "threshold": 0.3101292725920934,
+    "n": 9117,
+    "positives": 174
+   },
+   "lr_state": {
+    "f1": 0.039387308533916844,
+    "precision": 0.022556390977443608,
+    "recall": 0.15517241379310345,
+    "fpr": 0.13082858101308287,
+    "pr_auc": 0.02067904330106224,
+    "brier": 0.1555619239807129,
+    "threshold": 0.6369883771552691,
+    "n": 9117,
+    "positives": 174
+   },
+   "lr_stacked": {
+    "f1": 0.16850393700787403,
+    "precision": 0.09762773722627738,
+    "recall": 0.6149425287356322,
+    "fpr": 0.11058928771105893,
+    "pr_auc": 0.3847443187526631,
+    "brier": 0.06539162993431091,
+    "threshold": 0.18744661576223612,
+    "n": 9117,
+    "positives": 174
+   }
+  },
+  "early": {
+   "trace": {
+    "f1": 0.009847365829640572,
+    "precision": 0.004997501249375313,
+    "recall": 0.3333333333333333,
+    "fpr": 0.2449255751014885,
+    "pr_auc": 0.0039894592987212716,
+    "brier": 0.014668761275789354,
+    "threshold": 0.008162943446279275,
+    "n": 8159,
+    "positives": 30
+   },
+   "lr_state": {
+    "f1": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.048468446303358344,
+    "pr_auc": 0.005147952744481262,
+    "brier": 0.14526546001434326,
+    "threshold": 0.7702587752918336,
+    "n": 8159,
+    "positives": 30
+   },
+   "lr_stacked": {
+    "f1": 0.02277904328018223,
+    "precision": 0.012224938875305624,
+    "recall": 0.16666666666666666,
+    "fpr": 0.04969860991511871,
+    "pr_auc": 0.010723405880832607,
+    "brier": 0.05180153250694275,
+    "threshold": 0.6275383819026686,
+    "n": 8159,
+    "positives": 30
+   }
+  }
+ },
+ "models": {
+  "trace": "TRACE world model",
+  "lr_state": "Logistic regression (S_t)",
+  "lr_stacked": "Logistic regression (last 20 windows)"
+ },
+ "thresholds": {
+  "all/trace": 0.3101292725920934,
+  "all/lr_state": 0.6369883771552691,
+  "all/lr_stacked": 0.18744661576223612,
+  "early/trace": 0.008162943446279275,
+  "early/lr_state": 0.7702587752918336,
+  "early/lr_stacked": 0.6275383819026686
+ },
+ "early_warning": {
+  "trace": {
+   "attack_episodes": 1,
+   "warned_before_compromise": 1,
+   "warned_frac": 1.0,
+   "median_lead_min": 10.0,
+   "benign_episodes": 0,
+   "false_alarm_episodes": 0,
+   "false_alarms_per_host_hour": 2.076600076345591
+  },
+  "lr_state": {
+   "attack_episodes": 1,
+   "warned_before_compromise": 0,
+   "warned_frac": 0.0,
+   "median_lead_min": 0.0,
+   "benign_episodes": 0,
+   "false_alarm_episodes": 0,
+   "false_alarms_per_host_hour": 4.931925181320779
+  },
+  "lr_stacked": {
+   "attack_episodes": 1,
+   "warned_before_compromise": 0,
+   "warned_frac": 0.0,
+   "median_lead_min": 0.0,
+   "benign_episodes": 0,
+   "false_alarm_episodes": 0,
+   "false_alarms_per_host_hour": 2.137676549179285
+  }
+ },
+ "false_alarm_budget_per_host_hour": 2.23728813559322,
+ "early_warning_matched": {
+  "trace": {
+   "attack_episodes": 1,
+   "warned_before_compromise": 1,
+   "warned_frac": 1.0,
+   "median_lead_min": 10.0,
+   "benign_episodes": 0,
+   "false_alarm_episodes": 0,
+   "false_alarms_per_host_hour": 2.076600076345591
+  },
+  "lr_state": {
+   "attack_episodes": 1,
+   "warned_before_compromise": 0,
+   "warned_frac": 0.0,
+   "median_lead_min": 0.0,
+   "benign_episodes": 0,
+   "false_alarm_episodes": 0,
+   "false_alarms_per_host_hour": 3.313398651227892
+  },
+  "lr_stacked": {
+   "attack_episodes": 1,
+   "warned_before_compromise": 1,
+   "warned_frac": 1.0,
+   "median_lead_min": 6.0,
+   "benign_episodes": 0,
+   "false_alarm_episodes": 0,
+   "false_alarms_per_host_hour": 4.031047207023795
+  }
+ },
+ "thresholds_matched": {
+  "trace": 0.008162943446279275,
+  "lr_state": 0.8113595455423841,
+  "lr_stacked": 0.1679173316959995
+ },
+ "stage_macro_f1": 0.3301218161683278,
+ "next_state_nll": {
+  "world_model": 0.8869708094311485,
+  "persistence_baseline": 1.6552275338532136
+ }
+}

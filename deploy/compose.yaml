@@ -1,0 +1,66 @@
+# TRACE on Linux, end to end, without touching the host's network.
+#
+#   docker compose -f deploy/compose.yaml up --build
+#   open http://127.0.0.1:8000        (choose "Live capture")
+#
+# The sensor shares the console's network namespace and watches it, so the
+# whole demo lives inside Docker's own bridge. Traffic comes from replaying a
+# recorded capture (services: replay), so nothing new is put on any network.
+#
+# Enforcement is dry-run by default. Set TRACE_ENFORCE=1 on the console to let
+# an approved decision install a real nftables rule inside the container; the
+# rule set is the container's own, and the never-block list still protects the
+# container's gateway and DNS.
+
+services:
+  console:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: console
+    ports: ["127.0.0.1:${TRACE_PORT:-8000}:8000"]
+    environment:
+      TRACE_ENFORCE: "${TRACE_ENFORCE:-0}"
+    # CAP_NET_ADMIN is what nftables needs; nothing here requires --privileged.
+    cap_add: ["NET_ADMIN"]
+    volumes:
+      - ../artifacts:/app/artifacts
+      - ../data:/app/data:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/meta',timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # Live capture on the console's own interface. Add your own -iface here when
+  # deploying for real; in the container it watches eth0 of the shared stack.
+  sensor:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: sensor
+    network_mode: "service:console"
+    cap_add: ["NET_RAW", "NET_ADMIN"]
+    depends_on:
+      console: {condition: service_healthy}
+    command: ["-iface", "eth0", "-server", "http://127.0.0.1:8000", "-internal", "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"]
+
+  # Rehearsal traffic: replays a recorded capture through the live pipeline at
+  # 60x. This is what makes the live demo repeatable, and it generates no
+  # traffic on any network. It is opt-in, because a replay carries the capture's
+  # own timestamps: running it alongside a live sensor would put two different
+  # clocks on one timeline.
+  #
+  #   docker compose -f deploy/compose.yaml --profile replay up
+  replay:
+    profiles: ["replay"]
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: sensor
+    network_mode: "service:console"
+    depends_on:
+      console: {condition: service_healthy}
+    volumes:
+      - ../data/demo:/demo:ro
+    command: ["-replay", "/demo/demo-killchain.pcap", "-speed", "60", "-server", "http://127.0.0.1:8000", "-internal", "10.0.0.0/8"]

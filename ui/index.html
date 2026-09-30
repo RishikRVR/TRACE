@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRACE Console</title>
+<link rel="stylesheet" href="style.css">
+<script src="vendor/echarts.min.js"></script>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+      <circle cx="16" cy="16" r="13.5" fill="none" stroke="currentColor" stroke-width="2.2"/>
+      <path d="M6.5 20.5 L12 14.5 L17 18.5 L25.5 8.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="25.5" cy="8.5" r="2.6" fill="currentColor"/>
+    </svg>
+    <div><b>TRACE</b><span>Temporal Risk &amp; Attack Chain Estimation</span></div>
+  </div>
+
+  <label class="field"><span>Capture</span><select id="scenario" aria-label="Capture to analyse"></select></label>
+  <button id="uploadBtn" class="btn" style="align-self:flex-end">Upload PCAP / CSV</button>
+  <input id="file" type="file" accept=".pcap,.cap,.csv" hidden>
+
+  <div class="spacer"></div>
+
+  <div class="seg" role="group" aria-label="Detail level">
+    <button id="modeAnalyst" aria-pressed="true">Analyst</button><button id="modeExec" aria-pressed="false">Executive</button>
+  </div>
+  <span id="conn" class="conn"><i class="dot"></i><span id="connText">connected</span></span>
+  <button id="enforceBadge" class="badge" title="Enforcement mode">Enforcement…</button>
+  <button id="ledgerBadge" class="badge" title="Forecast ledger">Ledger…</button>
+  <button id="themeBtn" class="btn" title="Switch light / dark theme" aria-label="Switch theme">◐</button>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="forecast" aria-selected="true">Forecast</button>
+  <button role="tab" data-tab="bench" aria-selected="false">Benchmark</button>
+  <button role="tab" data-tab="ledger" aria-selected="false">Ledger</button>
+  <button role="tab" data-tab="how" aria-selected="false">How it works</button>
+</nav>
+
+<main>
+  <!-- ─────────────── Forecast ─────────────── -->
+  <section id="tab-forecast" class="tab" role="tabpanel">
+
+    <div class="kpis">
+      <div class="tile">
+        <div class="k">Network risk now</div>
+        <div class="v num" id="kpiRisk">–</div>
+        <div class="d" id="kpiRiskBand">waiting for data</div>
+      </div>
+      <div class="tile">
+        <div class="k">Hosts above threshold</div>
+        <div class="v num" id="kpiHosts">–</div>
+        <div class="d" id="kpiHostsSub">of 0 seen</div>
+      </div>
+      <div class="tile">
+        <div class="k">Early warning</div>
+        <div class="v num sm" id="kpiLead">–</div>
+        <div class="d" id="kpiLeadSub">before compromise</div>
+      </div>
+      <div class="tile">
+        <div class="k" id="kpiSrcK">Capture</div>
+        <div class="v sm" id="kpiSrc">–</div>
+        <div class="d" id="kpiSrcSub"></div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- host list -->
+      <aside class="card hosts">
+        <header>
+          <h2>Hosts by risk</h2>
+          <span class="sub" id="hostCount"></span>
+        </header>
+        <div id="hostList" role="listbox" aria-label="Hosts by forecast risk"></div>
+        <div id="otherAddr" class="small muted" style="padding:8px 14px"></div>
+      </aside>
+
+      <div class="col">
+        <!-- timeline -->
+        <section class="card">
+          <header>
+            <div>
+              <h2 id="tlTitle">Forecast timeline</h2>
+              <div class="sub" id="tlSub"></div>
+            </div>
+            <div class="toolbar">
+              <span id="liveStatus" class="conn hidden"><i class="dot"></i><span id="liveText"></span></span>
+              <button id="playBtn" class="btn primary">▶&nbsp; Replay</button>
+              <label class="field"><span>Pace</span>
+                <select id="speed" aria-label="Replay pace">
+                  <option value="1000">1 window / s</option>
+                  <option value="400" selected>2.5 / s</option>
+                  <option value="150">7 / s</option>
+                  <option value="40">25 / s</option>
+                </select>
+              </label>
+            </div>
+          </header>
+          <div id="leadBanner" class="callout hidden"></div>
+          <div id="timeline" class="chart"></div>
+          <div class="scrubrow">
+            <input id="scrub" type="range" min="0" max="0" value="0" aria-label="Move through time">
+            <output id="scrubOut" class="num"></output>
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--s1)"></i>TRACE — chance of compromise within 5 min</span>
+            <span id="legLR"><i class="dash"></i>Logistic regression (same features)</span>
+            <span><i class="band" style="background:color-mix(in srgb, var(--s1) 22%, transparent)"></i>Forecast cone, 100 imagined futures</span>
+            <span id="legTruth"><i class="band" style="background:var(--sunken); border:1px solid var(--rule)"></i>Ground-truth attack stage</span>
+          </div>
+        </section>
+
+        <!-- kill chain -->
+        <section class="card">
+          <header>
+            <h2>ATT&amp;CK kill chain</h2>
+            <div class="sub" id="nextStage"></div>
+          </header>
+          <div id="killchain" class="killchain"></div>
+          <div class="meterrow" id="surpriseRow"></div>
+        </section>
+
+        <div class="grid2">
+          <!-- why -->
+          <section class="card detail">
+            <header><h2>Why this forecast?</h2><span class="pill" id="whyP"></span></header>
+            <ul class="why" id="whySentences"></ul>
+            <div class="sub-h">Signals driving it <span class="muted small">— risk points lost when each is replaced by this host's normal behaviour</span></div>
+            <div id="whyBars" class="chart"></div>
+            <div class="sub-h">Which past windows mattered</div>
+            <div id="whyTime" class="chart"></div>
+            <p class="small muted" id="whyFaith" style="margin-top:6px"></p>
+          </section>
+
+          <div class="col">
+            <!-- what-if -->
+            <section class="card">
+              <header><h2>What-if: rehearse the response</h2></header>
+              <div class="rec" id="recommend"></div>
+              <div class="actions" id="actions" role="group" aria-label="Candidate responses"></div>
+              <div class="whatif" id="whatifResult"></div>
+              <div id="whatifChart" class="chart"></div>
+              <p class="small muted">The world model re-imagines the next 5 minutes with that traffic removed. A forecast alone never blocks anything — an analyst approves.</p>
+              <div id="blockBox" class="blockbox hidden"></div>
+            </section>
+
+            <!-- imagined futures -->
+            <section class="card detail">
+              <header><h2>Imagined futures</h2><span class="sub">median and 10–90% band of sampled next states</span></header>
+              <div id="imagined" class="imagined"></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- flagged flows -->
+        <section class="card detail">
+          <header><h2>Flagged flows</h2><span class="sub">connections behind the top signals, last 10 minutes</span></header>
+          <div class="tablewrap">
+            <table id="flows">
+              <thead><tr><th>Time</th><th>Source</th><th>Destination</th><th>Proto</th><th>Pkts</th><th>Bytes</th><th>State</th><th>TTL</th><th>Why flagged</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── Benchmark ─────────────── -->
+  <section id="tab-bench" class="tab" role="tabpanel" hidden><div id="bench"></div></section>
+
+  <!-- ─────────────── Ledger ─────────────── -->
+  <section id="tab-ledger" class="tab" role="tabpanel" hidden>
+    <section class="card">
+      <header>
+        <div>
+          <h2>Tamper-evident forecast ledger</h2>
+          <div class="sub">Every alarm and every analyst decision is chained by SHA-256 to the record before it. Editing any record breaks the chain from that point on.</div>
+        </div>
+        <div class="toolbar">
+          <button id="verifyBtn" class="btn primary">Verify chain</button>
+          <button id="tamperBtn" class="btn">Tamper test</button>
+        </div>
+      </header>
+      <div id="verifyResult" class="verify"></div>
+      <div class="tablewrap">
+        <table id="ledgerTable">
+          <thead><tr><th>#</th><th>Time</th><th>Event</th><th>Subject</th><th>Detail</th><th>Hash</th><th>Previous</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+
+  <!-- ─────────────── How it works ─────────────── -->
+  <section id="tab-how" class="tab" role="tabpanel" hidden><div id="how"></div></section>
+</main>
+
+<div id="loading" class="overlay hidden" role="status" aria-live="polite">
+  <div class="spinner"></div><div id="loadingText">Loading…</div>
+</div>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

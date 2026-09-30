@@ -1,0 +1,34 @@
+# TRACE default configuration. Every training run saves a copy of the config
+# it used (config.json) next to its weights.
+
+schema_version: 1
+
+window:
+  length_s: 30          # docs/decisions.md: 30 s windows
+  history: 20           # past windows used by explanations and the stacked baseline (n)
+
+forecast:
+  horizon_k: 10         # windows rolled out ahead (K = 5 minutes)
+  rollouts: 100         # Monte Carlo trajectories per forecast in the console
+  seed: 1337            # fixed rollout noise, so explanations are deterministic
+
+model:
+  type: mdn_rnn         # docs/decisions.md #3 (GRU cell: a rollout can start from any window)
+  latent_dim: 64
+  hidden_dim: 128
+  mixture_components: 5
+  packet_level_dropout: 0.3   # train with p_* masked so CSV (flow-only) inputs work
+
+train:
+  seed: 1
+  epochs: 14
+  lr: 0.002
+  pos_weight: 3.0       # infiltration-within-K positives are ~6% of windows
+  overshoot_frac: 0.35  # share of windows a multi-step rollout starts from
+  overshoot_steps: 5    # rollout steps whose predicted state is scored (NLL)
+  class_weighting: sqrt_inverse_frequency
+
+eval:
+  splits: [episode, held_out_family]   # dns_tunnel exfiltration never seen in training
+  threshold_from: validation           # chosen on validation, then fixed for test
+  metrics: [f1, precision, recall, fpr, pr_auc, brier, lead_time, stage_macro_f1, next_state_nll]
